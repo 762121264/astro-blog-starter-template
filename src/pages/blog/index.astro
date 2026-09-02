@@ -20,6 +20,27 @@ const allTags = [...new Set(posts.flatMap((post) => post.data.tags))].sort();
 			main {
 				width: 960px;
 			}
+			.search-bar {
+				margin-bottom: 1.5em;
+			}
+			.search-bar input {
+				width: 100%;
+				font-family: inherit;
+				font-size: 1em;
+				padding: 0.6em 0.8em;
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 999px;
+				color: rgb(var(--gray-dark));
+				outline: none;
+				box-sizing: border-box;
+				transition: 0.15s ease;
+			}
+			.search-bar input::placeholder {
+				color: rgb(var(--gray));
+			}
+			.search-bar input:focus {
+				border-color: var(--accent);
+			}
 			.filter-bar {
 				display: flex;
 				flex-wrap: wrap;
@@ -35,6 +56,7 @@ const allTags = [...new Set(posts.flatMap((post) => post.data.tags))].sort();
 				background: white;
 				color: rgb(var(--gray-dark));
 				cursor: pointer;
+				white-space: nowrap;
 				transition: 0.15s ease;
 			}
 			.filter-bar button:hover {
@@ -58,6 +80,7 @@ const allTags = [...new Set(posts.flatMap((post) => post.data.tags))].sort();
 				border-radius: 999px;
 				background: rgb(var(--gray-light));
 				color: rgb(var(--gray-dark));
+				white-space: nowrap;
 			}
 			ul {
 				display: flex;
@@ -134,6 +157,14 @@ const allTags = [...new Set(posts.flatMap((post) => post.data.tags))].sort();
 		<Header />
 		<main>
 			<section>
+				<div class="search-bar">
+					<input
+						type="search"
+						id="post-search"
+						placeholder="Search posts..."
+						autocomplete="off"
+					/>
+				</div>
 				<div class="filter-bar" id="filter-bar">
 					<button class="active" data-tag="all">All</button>
 					{allTags.map((tag) => (
@@ -143,7 +174,7 @@ const allTags = [...new Set(posts.flatMap((post) => post.data.tags))].sort();
 				<ul id="post-list">
 					{
 						posts.map((post) => (
-							<li data-tags={post.data.tags.join(',')}>
+							<li data-tags={post.data.tags.join(',')} data-search={`${post.data.title} ${post.data.description} ${post.data.tags.join(' ')}`.toLowerCase()}>
 								<a href={`/blog/${post.id}/`}>
 									<img width={720} height={360} src={post.data.heroImage} alt="" />
 									<h4 class="title">{post.data.title}</h4>
@@ -172,15 +203,22 @@ const allTags = [...new Set(posts.flatMap((post) => post.data.tags))].sort();
 			const buttons = document.querySelectorAll('#filter-bar button');
 			const posts = document.querySelectorAll('#post-list li');
 			const noResults = document.getElementById('no-results');
+			const searchInput = document.getElementById('post-search');
 
-			function applyFilter(tag) {
+			let activeTag = 'all';
+
+			function applyFilter() {
+				const query = (searchInput.value || '').trim().toLowerCase();
 				buttons.forEach((b) =>
-					b.classList.toggle('active', b.dataset.tag === tag)
+					b.classList.toggle('active', b.dataset.tag === activeTag)
 				);
 				let visibleCount = 0;
 				posts.forEach((post) => {
 					const tags = (post.dataset.tags || '').split(',');
-					const show = tag === 'all' || tags.includes(tag);
+					const tagMatch = activeTag === 'all' || tags.includes(activeTag);
+					const searchMatch =
+						query === '' || (post.dataset.search || '').includes(query);
+					const show = tagMatch && searchMatch;
 					post.style.display = show ? '' : 'none';
 					if (show) visibleCount++;
 				});
@@ -188,13 +226,19 @@ const allTags = [...new Set(posts.flatMap((post) => post.data.tags))].sort();
 			}
 
 			buttons.forEach((btn) => {
-				btn.addEventListener('click', () => applyFilter(btn.dataset.tag));
+				btn.addEventListener('click', () => {
+					activeTag = btn.dataset.tag;
+					applyFilter();
+				});
 			});
+
+			searchInput.addEventListener('input', () => applyFilter());
 
 			const params = new URLSearchParams(window.location.search);
 			const initialTag = params.get('tag');
 			if (initialTag) {
-				applyFilter(initialTag);
+				activeTag = initialTag;
+				applyFilter();
 			}
 		</script>
 	</body>
