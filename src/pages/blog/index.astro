@@ -9,6 +9,7 @@ import FormattedDate from '../../components/FormattedDate.astro';
 const posts = (await getCollection('blog')).sort(
 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 );
+const allTags = [...new Set(posts.flatMap((post) => post.data.tags))].sort();
 ---
 
 <!doctype html>
@@ -18,6 +19,45 @@ const posts = (await getCollection('blog')).sort(
 		<style>
 			main {
 				width: 960px;
+			}
+			.filter-bar {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5em;
+				margin-bottom: 2em;
+			}
+			.filter-bar button {
+				font-family: inherit;
+				font-size: 0.9em;
+				padding: 0.4em 0.9em;
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 999px;
+				background: white;
+				color: rgb(var(--gray-dark));
+				cursor: pointer;
+				transition: 0.15s ease;
+			}
+			.filter-bar button:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.filter-bar button.active {
+				background: var(--accent);
+				border-color: var(--accent);
+				color: white;
+			}
+			.post-tags {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.4em;
+				margin-top: 0.5em;
+			}
+			.post-tags .tag {
+				font-size: 0.75em;
+				padding: 0.15em 0.6em;
+				border-radius: 999px;
+				background: rgb(var(--gray-light));
+				color: rgb(var(--gray-dark));
 			}
 			ul {
 				display: flex;
@@ -68,6 +108,11 @@ const posts = (await getCollection('blog')).sort(
 			ul a:hover img {
 				box-shadow: var(--box-shadow);
 			}
+			.no-results {
+				text-align: center;
+				color: rgb(var(--gray));
+				padding: 2em;
+			}
 			@media (max-width: 720px) {
 				ul {
 					gap: 0.5em;
@@ -89,23 +134,68 @@ const posts = (await getCollection('blog')).sort(
 		<Header />
 		<main>
 			<section>
-				<ul>
+				<div class="filter-bar" id="filter-bar">
+					<button class="active" data-tag="all">All</button>
+					{allTags.map((tag) => (
+						<button data-tag={tag}>{tag}</button>
+					))}
+				</div>
+				<ul id="post-list">
 					{
 						posts.map((post) => (
-							<li>
+							<li data-tags={post.data.tags.join(',')}>
 								<a href={`/blog/${post.id}/`}>
 									<img width={720} height={360} src={post.data.heroImage} alt="" />
 									<h4 class="title">{post.data.title}</h4>
 									<p class="date">
 										<FormattedDate date={post.data.pubDate} />
 									</p>
+									{post.data.tags.length > 0 && (
+										<div class="post-tags">
+											{post.data.tags.map((tag) => (
+												<span class="tag">{tag}</span>
+											))}
+										</div>
+									)}
 								</a>
 							</li>
 						))
 					}
 				</ul>
+				<p class="no-results" id="no-results" style="display:none;">
+					No posts found for this category.
+				</p>
 			</section>
 		</main>
 		<Footer />
+		<script>
+			const buttons = document.querySelectorAll('#filter-bar button');
+			const posts = document.querySelectorAll('#post-list li');
+			const noResults = document.getElementById('no-results');
+
+			function applyFilter(tag) {
+				buttons.forEach((b) =>
+					b.classList.toggle('active', b.dataset.tag === tag)
+				);
+				let visibleCount = 0;
+				posts.forEach((post) => {
+					const tags = (post.dataset.tags || '').split(',');
+					const show = tag === 'all' || tags.includes(tag);
+					post.style.display = show ? '' : 'none';
+					if (show) visibleCount++;
+				});
+				noResults.style.display = visibleCount === 0 ? '' : 'none';
+			}
+
+			buttons.forEach((btn) => {
+				btn.addEventListener('click', () => applyFilter(btn.dataset.tag));
+			});
+
+			const params = new URLSearchParams(window.location.search);
+			const initialTag = params.get('tag');
+			if (initialTag) {
+				applyFilter(initialTag);
+			}
+		</script>
 	</body>
 </html>

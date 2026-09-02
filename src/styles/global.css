@@ -117,6 +117,9 @@ pre {
 pre > code {
   all: unset;
 }
+pre {
+  overflow-x: auto;
+}
 blockquote {
   border-left: 4px solid var(--accent);
   padding: 0 0 0 20px;
@@ -129,10 +132,29 @@ hr {
 }
 @media (max-width: 720px) {
   body {
-    font-size: 18px;
+    font-size: 17px;
   }
   main {
+    padding: 1.5em 1.25em;
+  }
+  h1 {
+    font-size: 2.2em;
+  }
+  h2 {
+    font-size: 1.75em;
+  }
+  h3 {
+    font-size: 1.45em;
+  }
+  h4 {
+    font-size: 1.2em;
+  }
+  blockquote {
+    font-size: 1.1em;
+  }
+  pre {
     padding: 1em;
+    font-size: 0.85em;
   }
 }
 
